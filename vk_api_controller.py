@@ -2,7 +2,7 @@ import requests
 import json
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
 from enum import Enum
 
 from model import Track
@@ -14,6 +14,16 @@ class Groups(Enum):
     SOUNDFIELDS = 'soundfields'
     GLBDOM = 'glbdom'
     RADIANT_SOUND = 'radiant_sound_home'
+    # CRAFT_MUSIC = 'craftmusique'
+
+
+class GroupsIDs(Enum):
+    """Enum for group ids."""
+    JAZZVE = 79069156
+    SOUNDFIELDS = 5124202
+    GLBDOM = 152579809
+    RADIANT_SOUND = 32159054
+    # CRAFT_MUSIC = 40030199
 
 
 @dataclass
@@ -40,7 +50,7 @@ class VKAPIController:
             url,
             params={
                 'domain': group_domain,
-                'count': 50,
+                'count': 20,
                 'access_token': self._vk_api_token,
                 'v': self._api_version
             }
@@ -64,73 +74,153 @@ class VKAPIController:
         yesterday_posts = [post for post in all_posts['response']['items'] if self._check_date(post['date'])]
         return yesterday_posts
 
-    def _process_post(self, post: Dict) -> List[Track]:
+    # Not being used for now
+    def _get_group_id(self, group_domain: str) -> int:
+        """Get group id by its domain."""
+        url = 'https://api.vk.com/method/utils.resolveScreenName'
+        response = requests.get(
+            url=url,
+            params={
+                'screen_name': group_domain,
+                'access_token': self._vk_api_token,
+                'v': self._api_version
+            }
+        )
+        assert response.status_code == 200
+        return response.json()['response']['object_id']
+
+    # Not being used for now
+    def _get_post_url(self, group_id: int, post_id: int) -> str:
+        """Get post url based on group and post ids."""
+        url = 'https://api.vk.com/method/wall.getById'
+        response = requests.get(
+            url=url,
+            params={
+                'posts': [f'{group_id}_{post_id}'],
+                'access_token': self._vk_api_token,
+                'v': self._api_version
+            }
+        )
+        return response.json()
+
+    def _process_post(self, post: Dict, group_id: str) -> Tuple[List[Track], Optional[str]]:
         """Process certain post."""
         tracks: List[Track] = []
+
         tracks_from_post = [attch['audio'] for attch in post['attachments'] if attch['type'] == 'audio']
+        # If there are no tracks in a post, it means it is a VK-playlist which can't be parsed
+        playlist_post_url = None
+        if not tracks_from_post:
+            playlist_post_url = f'vk.com/wall-{group_id}_{post["id"]}'
+
         for track_from_post in tracks_from_post:
             artist = track_from_post['artist']
             full_name = self._compose_full_name(track_from_post)
             alternative_name = track_from_post['title']
             tracks.append(Track(artist, full_name, alternative_name))
-        return tracks
+        return tracks, playlist_post_url
 
     def _check_on_genres_condition(self, genres: List[str]) -> bool:
-        """Return True if 'genres' have common substrings with 'self._desired_genres'. Otherwise, return False."""
+        """Return True if 'genres' have common genres with 'desired_genres'. Otherwise, return False."""
         for genre in genres:
             for desired_genre in self._desired_genres:
                 if desired_genre in genre:
                     return True
         return False
 
-    def _process_soundfields(self) -> List[Track]:
+    # Not being used for now
+    def _process_soundfields(self) -> Tuple[List[Track], List[str]]:
         """Get all tracks from yesterday posts, which satisfy desired genres, from 'Soundfields' VK group."""
         yesterday_posts = self._get_yesterday_posts(Groups.SOUNDFIELDS.value)
         tracks: List[Track] = []
+        playlist_post_urls: List[str] = []
         for post in yesterday_posts:
             genres = post['text'].split('\n')[-1].replace('#', '').split(' ')
             if not self._check_on_genres_condition(genres):
                 continue
-            tracks.extend(self._process_post(post))
-        return tracks
+            found_tracks, playlist_post_url = self._process_post(post, GroupsIDs.SOUNDFIELDS.value)
+            tracks.extend(found_tracks)
+            if playlist_post_url:
+                playlist_post_urls.append(playlist_post_url)
+        return tracks, playlist_post_urls
 
-    def _process_glbdom(self) -> List[Track]:
+    # Not being used for now
+    def _process_glbdom(self) -> Tuple[List[Track], List[str]]:
         """Get all tracks from yesterday posts from 'GLBDOM' VK group."""
         yesterday_posts = self._get_yesterday_posts(Groups.GLBDOM.value)
-        tracks = []
+        tracks: List[Track] = []
+        playlist_post_urls: List[str] = []
         for post in yesterday_posts:
-            tracks.extend(self._process_post(post))
-        return tracks
+            found_tracks, playlist_post_url = self._process_post(post, GroupsIDs.GLBDOM.value)
+            tracks.extend(found_tracks)
+            if playlist_post_url:
+                playlist_post_urls.append(playlist_post_url)
+        return tracks, playlist_post_urls
 
-    def _process_radiant_sound(self) -> List[Track]:
+    # Not being used for now
+    def _process_radiant_sound(self) -> Tuple[List[Track], List[str]]:
         """Get all tracks from yesterday posts, which satisfy desired genres, from 'Radiant Sound' VK group."""
         yesterday_posts = self._get_yesterday_posts(Groups.RADIANT_SOUND.value)
-        tracks = []
+        tracks: List[Track] = []
+        playlist_post_urls: List[str] = []
         for post in yesterday_posts:
             genres = post['text'].split('\n')[1].split('/')
             if not self._check_on_genres_condition(genres):
                 continue
-            tracks.extend(self._process_post(post))
-        return tracks
+            found_tracks, playlist_post_url = self._process_post(post, GroupsIDs.RADIANT_SOUND.value)
+            tracks.extend(found_tracks)
+            if playlist_post_url:
+                playlist_post_urls.append(playlist_post_url)
+        return tracks, playlist_post_urls
 
-    def _process_jazzve(self) -> List[Track]:
+    # Not being used for now
+    def _process_jazzve(self) -> Tuple[List[Track], List[str]]:
         """Get all tracks from yesterday posts from 'JAZZVE Tubesbymates' VK group."""
         yesterday_posts = self._get_yesterday_posts(Groups.JAZZVE.value)
-        tracks = []
+        tracks: List[Track] = []
+        playlist_post_urls: List[str] = []
         for post in yesterday_posts:
-            tracks.extend(self._process_post(post))
-        return tracks
+            found_tracks, playlist_post_url = self._process_post(post, GroupsIDs.JAZZVE.value)
+            tracks.extend(found_tracks)
+            if playlist_post_url:
+                playlist_post_urls.append(playlist_post_url)
+        return tracks, playlist_post_urls
 
-    def process_groups(self) -> List[Track]:
-        """Get yesterday tracks from all the groups presented in 'Groups' class."""
-        posts: List[Track] = []
-        # posts.extend(self._process_soundfields())
-        # posts.extend(self._process_glbdom())
-        posts.extend(self._process_radiant_sound())
-        # posts.extend(self._process_jazzve())
+    def process_groups(self) -> Tuple[List[Track], List[str]]:
+        """
+        Process all yesterday posts in all groups presented in Groups class.
+
+        -------
+        Returns
+            Tuple[List[Track], List[str]]
+            First element of tuple is a list of yesterday tracks from all the groups presented in 'Groups' class.
+            Second element of tuple is a list of VK urls which consists of playlists which can't be parsed.
+        """
+        tracks: List[Track] = []
+        playlist_post_urls: List[str] = []
+        for group in Groups:
+            yesterday_posts = self._get_yesterday_posts(group.value)
+            for post in yesterday_posts:
+
+                if group is Groups.RADIANT_SOUND:
+                    genres = post['text'].split('\n')[1].split('/')
+                    if not self._check_on_genres_condition(genres):
+                        continue
+
+                if group is Groups.SOUNDFIELDS:
+                    if not post['text'] == '#somegoods':
+                        genres = post['text'].split('\n')[-1].replace('#', '').split(' ')
+                        if not self._check_on_genres_condition(genres):
+                            continue
+
+                found_tracks, playlist_post_url = self._process_post(post, GroupsIDs[group.name].value)
+                tracks.extend(found_tracks)
+                if playlist_post_url:
+                    playlist_post_urls.append(playlist_post_url)
+
         # Remove duplicates
-        posts = list(set(posts))
-        return posts
+        # tracks = list(set(tracks))
+        return tracks, playlist_post_urls
 
 
 """

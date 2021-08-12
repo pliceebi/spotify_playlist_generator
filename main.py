@@ -1,4 +1,5 @@
 import os
+from pprint import pprint
 
 from vk_api_controller import VKAPIController
 from spotify_api_controller import SpotifyAPIController
@@ -8,7 +9,8 @@ from utils import yesterday_date_as_str
 # TODO
 # 1) What to do with unfound tracks?
 # 2) Remove duplicates
-# 3) Rework 'Radiant Sound', 'Sounfields' and 'Jazzve'
+# 3) Add Craft music
+# 4) Replace generating spotify token every morning with something else
 
 
 def main():
@@ -16,8 +18,8 @@ def main():
     vk_token = os.environ.get('VK_API_TOKEN')
     vk = VKAPIController(vk_token)
 
-    # Get tracks from VK
-    tracks = vk.process_groups()
+    # Get tracks and playlist post urls from VK
+    tracks, playlist_post_urls = vk.process_groups()
     num_of_tracks_to_find = len(tracks)
 
     if not num_of_tracks_to_find:
@@ -37,9 +39,12 @@ def main():
 
     print(f'Number of tracks to find: {num_of_tracks_to_find}. Number of found tracks: {num_of_found_tracks}')
     if num_of_found_tracks:
-        print(f'Percentage of found tracks from VK in Spotify: {num_of_found_tracks / num_of_tracks_to_find * 100}%')
+        print(f'Percentage of found tracks from VK in Spotify: '
+              f'{round(num_of_found_tracks / num_of_tracks_to_find * 100, 1)}%')
     else:
         print('Percentage of found tracks from VK in Spotify: 0%')
+
+    pprint(playlist_post_urls)
 
 
 if __name__ == '__main__':

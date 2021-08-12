@@ -7,4 +7,3 @@ class Track:
     artist: str
     full_name: str
     alternative_name: str = None
-    post_url: str = None

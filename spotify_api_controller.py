@@ -36,7 +36,6 @@ class SpotifyAPIController:
             data=json.dumps(
                 {
                     'name': playlist_name,
-                    'description': 'Test',
                     'public': False,
                 }
             ),
@@ -86,6 +85,7 @@ class SpotifyAPIController:
 
     def add_tracks_to_playlist(self, playlist_id: str, tracks: List[Track]):
         """Add add tracks to the playlist."""
+        unfound_tracks = []
         for track in tracks:
             track_uri = self.get_track_uri(track.full_name)
             if not track_uri and track.alternative_name:
@@ -104,5 +104,5 @@ class SpotifyAPIController:
         status_code = response.status_code
         assert status_code in (200, 201), (f'Getting the playlist items failed with status code: {status_code}.\n'
                                            f'Reason: {response.reason}')
-        playlist_length = response.json()['tracks']['total']
+        playlist_length = response.json()['total']
         return playlist_length

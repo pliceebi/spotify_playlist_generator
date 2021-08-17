@@ -1,16 +1,16 @@
 import os
-from pprint import pprint
 
-from vk_api_controller import VKAPIController
-from spotify_api_controller import SpotifyAPIController
-from utils import yesterday_date_as_str
+from core.vk_api_controller import VKAPIController
+from core.spotify_api_controller import SpotifyAPIController
+from utils.utils import print_playlist_post_urls
 
 
 # TODO
-# 1) What to do with unfound tracks?
-# 2) Remove duplicates
-# 3) Add Craft music
-# 4) Replace generating spotify token every morning with something else
+# 1) What to do with not found tracks? (DONE)
+# 2) Remove duplicates (Partly done)
+# 3) Add Craft music (DONE)
+# 4) Replace generating spotify token every morning with something else (NOT DONE YET)
+# 5) Decomposition (DONE)
 
 
 def main():
@@ -24,6 +24,7 @@ def main():
 
     if not num_of_tracks_to_find:
         print('Nothing to find today :(')
+        print_playlist_post_urls(playlist_post_urls)
         return
 
     # Init SpotifyAPIController object
@@ -32,9 +33,8 @@ def main():
     spotify = SpotifyAPIController(user_id, spotify_api_token)
 
     # Create the playlist in Spotify and add tracks to it
-    playlist_name = f'Tracks from {yesterday_date_as_str()}'
-    playlist_id = spotify.create_playlist(playlist_name)
-    spotify.add_tracks_to_playlist(playlist_id, tracks)
+    playlist_id = spotify.create_playlist()
+    not_found_tracks = spotify.add_tracks_to_playlist(playlist_id, tracks)
     num_of_found_tracks = spotify.get_length_of_playlist(playlist_id)
 
     print(f'Number of tracks to find: {num_of_tracks_to_find}. Number of found tracks: {num_of_found_tracks}')
@@ -44,7 +44,14 @@ def main():
     else:
         print('Percentage of found tracks from VK in Spotify: 0%')
 
-    pprint(playlist_post_urls)
+    if not_found_tracks:
+        print('\nTrack names which have not been found in Spotify:')
+        for i, (post_url, tracks) in enumerate(not_found_tracks.items(), 1):
+            tracks = '\n'.join(tracks)
+            print(f"{i}. {post_url}"
+                  f"\n{tracks}")
+
+    print_playlist_post_urls(playlist_post_urls)
 
 
 if __name__ == '__main__':

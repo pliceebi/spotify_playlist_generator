@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Tuple, Optional
 from enum import Enum
 
-from model import Track
+from model.track import Track
 
 
 class Groups(Enum):
@@ -14,7 +14,7 @@ class Groups(Enum):
     SOUNDFIELDS = 'soundfields'
     GLBDOM = 'glbdom'
     RADIANT_SOUND = 'radiant_sound_home'
-    # CRAFT_MUSIC = 'craftmusique'
+    CRAFT_MUSIC = 'craftmusique'
 
 
 class GroupsIDs(Enum):
@@ -23,7 +23,7 @@ class GroupsIDs(Enum):
     SOUNDFIELDS = 5124202
     GLBDOM = 152579809
     RADIANT_SOUND = 32159054
-    # CRAFT_MUSIC = 40030199
+    CRAFT_MUSIC = 40030199
 
 
 @dataclass
@@ -38,12 +38,12 @@ class VKAPIController:
 
     @staticmethod
     def _check_date(post_date_ms: int) -> bool:
-        """Check if post was published yesterday. Otherwise, return False."""
+        """Check if the post was published yesterday. Otherwise, return False."""
         post_date = datetime.fromtimestamp(post_date_ms).date()
         yesterday_date = (datetime.today() - timedelta(days=1)).date()
         return post_date == yesterday_date
 
-    def _request_posts(self, group_domain: str) -> Dict:
+    def _request_posts(self, group_domain: str) -> List:
         """Send HTTP-request to VK API to get last 20 posts for 'group_domain'."""
         url = 'https://api.vk.com/method/wall.get'
         response = requests.get(
@@ -57,7 +57,7 @@ class VKAPIController:
         )
         assert response.status_code == 200, (f'Request failed to get posts from {group_domain} '
                                              f'with {response.status_code}. Reason: {response.reason}')
-        return json.loads(response.text)
+        return json.loads(response.text)['response']['items']
 
     @staticmethod
     def _compose_full_name(audio: Dict) -> str:
@@ -68,10 +68,10 @@ class VKAPIController:
             return f'{title} {subtitle}'
         return title
 
-    def _get_yesterday_posts(self, group_domain: str) -> List:
+    def _get_yesterday_posts(self, group_domain: str) -> List[Dict]:
         """Get posts that were published yesterday for given VK 'group_domain'."""
         all_posts = self._request_posts(group_domain)
-        yesterday_posts = [post for post in all_posts['response']['items'] if self._check_date(post['date'])]
+        yesterday_posts = [post for post in all_posts if self._check_date(post['date'])]
         return yesterday_posts
 
     # Not being used for now
@@ -117,7 +117,8 @@ class VKAPIController:
             artist = track_from_post['artist']
             full_name = self._compose_full_name(track_from_post)
             alternative_name = track_from_post['title']
-            tracks.append(Track(artist, full_name, alternative_name))
+            post_url = f'vk.com/wall-{group_id}_{post["id"]}'
+            tracks.append(Track(artist, full_name, alternative_name, post_url))
         return tracks, playlist_post_url
 
     def _check_on_genres_condition(self, genres: List[str]) -> bool:
@@ -215,18 +216,8 @@ class VKAPIController:
 
                 found_tracks, playlist_post_url = self._process_post(post, GroupsIDs[group.name].value)
                 tracks.extend(found_tracks)
+
                 if playlist_post_url:
                     playlist_post_urls.append(playlist_post_url)
 
-        # Remove duplicates
-        # tracks = list(set(tracks))
         return tracks, playlist_post_urls
-
-
-"""
-Саммари по группам:
-1) Soundfields отлично парсит. Нужно добавить обработку VA артистов
-2) В jazzve надо парсить просто треки и все. Так как жанров там нет
-3) Для glbdom то же самое, что и для jazzve
-4) Radiant sound: вторая строка - жанры, перечисленные через /
-"""

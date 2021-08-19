@@ -62,7 +62,8 @@ class SpotifyAPIController:
         )
         status_code = response.status_code
         assert status_code in (200, 201, 204), (f'Request to get track uri failed for {track} with status code: '
-                                                f'{status_code}.\nReason: {response.reason}')
+                                                f'{status_code}.\n'
+                                                f'Reason: {response.reason}')
         tracks = response.json().get('tracks')
         if not tracks:
             return None
@@ -87,7 +88,7 @@ class SpotifyAPIController:
 
     def add_tracks_to_playlist(self, playlist_id: str, tracks: List[Track]) -> Dict[str, List[str]]:
         """
-        Add tracks to the playlist if they are not in the playlist already.
+        Add tracks to the playlist if they are not in the playlist yet.
         And return names of tracks which have not been found in Spotify.
         """
         added_tracks_uris = []
@@ -102,10 +103,9 @@ class SpotifyAPIController:
                 else:
                     not_found_tracks[track.vk_post_url].append(track.not_found_name)
                 continue
-            track.uri = track_uri
-            if track.uri not in added_tracks_uris:
+            if track_uri not in added_tracks_uris:
                 self.add_track_to_playlist(playlist_id, track_uri)
-                added_tracks_uris.append(track.uri)
+                added_tracks_uris.append(track_uri)
         return not_found_tracks
 
     def get_length_of_playlist(self, playlist_id: str) -> int:

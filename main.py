@@ -45,7 +45,7 @@ def main():
         print('Percentage of found tracks from VK in Spotify: 0%')
 
     if not_found_tracks:
-        print('\nTrack names which have not been found in Spotify:')
+        print('\nTrack which have not been found in Spotify:')
         for i, (post_url, tracks) in enumerate(not_found_tracks.items(), 1):
             tracks = '\n'.join(tracks)
             print(f"{i}. {post_url}"

@@ -126,9 +126,8 @@ class VKAPIController:
         for track_from_post in tracks_from_post:
             artist = track_from_post['artist']
             full_name = self._compose_full_name(track_from_post)
-            alternative_name = track_from_post['title']
             post_url = f'vk.com/wall-{group_id}_{post["id"]}'
-            tracks.append(Track(artist, full_name, alternative_name, post_url))
+            tracks.append(Track(artist, full_name, post_url))
         return tracks, playlist_post_url
 
     def _check_on_genres_condition(self, genres: List[str]) -> bool:
@@ -163,7 +162,7 @@ class VKAPIController:
                         continue
 
                 if group is Groups.SOUNDFIELDS:
-                    if not post['text'] == '#somegoods':
+                    if post['text'] not in ('#somegoods', '#qweektunes'):
                         genres = post['text'].split('\n')[-1].replace('#', '').split(' ')
                         if not self._check_on_genres_condition(genres):
                             continue

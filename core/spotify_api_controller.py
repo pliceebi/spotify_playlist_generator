@@ -2,6 +2,7 @@ import requests
 import json
 from dataclasses import dataclass
 from typing import List, Dict, Optional
+from base64 import b64encode
 
 from model.track import Track
 from utils.utils import yesterday_date_as_str
@@ -11,23 +12,9 @@ from utils.utils import yesterday_date_as_str
 class SpotifyAPIController:
     _user_id: str
     _api_token: str
-    # _client_id: str
-    # _client_secret: str
+    _client_id: str
+    _client_secret: str
     # _api_token: str = None
-
-    # def _request_token(self):
-    #     url = 'https://accounts.spotify.com/api/token'
-    #     response = requests.post(
-    #         url=url,
-    #         data={
-    #             'grant_type': 'client_credentials',
-    #             'client_id': self._client_id,
-    #             'client_secret': self._client_secret
-    #         }
-    #     )
-    #     status_code = response.status_code
-    #     assert status_code == 200, f'Getting API token failed. Status code: {status_code}'
-    #     self._api_token = response.json()['access_token']
 
     def create_playlist(self) -> str:
         """Create playlist with 'playlist_name' and return its id."""
@@ -44,25 +31,25 @@ class SpotifyAPIController:
             headers={'Authorization': f'Bearer {self._api_token}'}
         )
         status_code = response.status_code
-        assert status_code in (200, 201), (f'Playlist creation failed with status code: {status_code}.\n'
+        assert status_code in (200, 201), (f'Playlist creation failed with status code: {status_code} \n'
                                            f'Reason: {response.reason}')
         playlist_id = response.json()['id']
         return playlist_id
 
-    def get_track_uri(self, track: str) -> Optional[str]:
+    def get_track_uri(self, composed_full_name: str, track_name: str) -> Optional[str]:
         """Get Spotify track uri."""
         url = 'https://api.spotify.com/v1/search'
         response = requests.get(
             url=url,
             params={
-                'q': track,
+                'q': composed_full_name,
                 'type': 'track'
             },
             headers={'Authorization': f'Bearer {self._api_token}'}
         )
         status_code = response.status_code
-        assert status_code in (200, 201, 204), (f'Request to get track uri failed for {track} with status code: '
-                                                f'{status_code}.\n'
+        assert status_code in (200, 201, 204), (f'Request to get track uri failed for {composed_full_name} '
+                                                f'with status code: {status_code}.\n'
                                                 f'Reason: {response.reason}')
         tracks = response.json().get('tracks')
         if not tracks:
@@ -71,8 +58,11 @@ class SpotifyAPIController:
         items = tracks.get('items')
         if not items:
             return None
-        # Get the best result from request
-        return items[0]['uri']
+
+        for item in items:
+            if item['name'].replace('- ', '') == track_name:
+                return item['uri']
+        return None
 
     def add_track_to_playlist(self, playlist_id: str, track_uri: str):
         """Add track by track uri to playlist by its id."""
@@ -89,14 +79,13 @@ class SpotifyAPIController:
     def add_tracks_to_playlist(self, playlist_id: str, tracks: List[Track]) -> Dict[str, List[str]]:
         """
         Add tracks to the playlist if they are not in the playlist yet.
+
         And return names of tracks which have not been found in Spotify.
         """
         added_tracks_uris = []
         not_found_tracks = {}
         for track in tracks:
-            track_uri = self.get_track_uri(track.composed_full_name)
-            if not track_uri:
-                track_uri = self.get_track_uri(track.composed_alternative_full_name)
+            track_uri = self.get_track_uri(track.composed_full_name, track.name)
             if not track_uri:
                 if track.vk_post_url not in not_found_tracks.keys():
                     not_found_tracks[track.vk_post_url] = [track.not_found_name]

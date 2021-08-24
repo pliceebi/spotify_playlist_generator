@@ -30,6 +30,8 @@ def main():
     # Init SpotifyAPIController object
     user_id = os.environ.get('SPOTIFY_USER_ID')
     spotify_api_token = os.environ.get('SPOTIFY_MY_TOKEN')
+    # spotify_client_id = os.environ.get('SPOTIFY_CLIENT_ID')
+    # spotify_client_secret = os.environ.get('SPOTIFY_CLIENT_SECRET')
     spotify = SpotifyAPIController(user_id, spotify_api_token)
 
     # Create the playlist in Spotify and add tracks to it

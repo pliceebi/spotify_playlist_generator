@@ -12,8 +12,8 @@ from utils.utils import yesterday_date_as_str
 class SpotifyAPIController:
     _user_id: str
     _api_token: str
-    _client_id: str
-    _client_secret: str
+    # _client_id: str
+    # _client_secret: str
     # _api_token: str = None
 
     def create_playlist(self) -> str:

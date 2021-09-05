@@ -30,11 +30,7 @@ class GroupsIDs(Enum):
 class VKAPIController:
     _vk_api_token: str
     _api_version: float = 5.131
-
-    # TODO: replace with attribute with default (but how?)
-    @property
-    def _desired_genres(self) -> set:
-        return {'house', 'funk', 'disco', 'soul'}
+    _desired_genres: tuple = ('house', 'funk', 'disco', 'soul')
 
     @staticmethod
     def _check_date(post_date_ms: int) -> bool:
@@ -124,18 +120,17 @@ class VKAPIController:
             playlist_post_url = f'vk.com/wall-{group_id}_{post["id"]}'
 
         for track_from_post in tracks_from_post:
-            artist = track_from_post['artist']
-            full_name = self._compose_full_name(track_from_post)
+            artist = Track.compose_artist_name(track_from_post['artist'])
+            full_name = Track.compose_full_name(track_from_post)
+            alternative_name = track_from_post['title']
             post_url = f'vk.com/wall-{group_id}_{post["id"]}'
-            tracks.append(Track(artist, full_name, post_url))
+            tracks.append(Track(artist, full_name, alternative_name, post_url))
         return tracks, playlist_post_url
 
-    def _check_on_genres_condition(self, genres: List[str]) -> bool:
-        """Return True if 'genres' have common genres with 'desired_genres'. Otherwise, return False."""
-        for genre in genres:
-            for desired_genre in self._desired_genres:
-                if desired_genre in genre:
-                    return True
+    def _check_genres(self, post_genres: List[str]) -> bool:
+        """Check if post genres intersect with desired genres."""
+        if set(post_genres).intersection(self._desired_genres):
+            return True
         return False
 
     def process_groups(self) -> Tuple[List[Track], List[str]]:
@@ -158,13 +153,13 @@ class VKAPIController:
                     if not post.get('text'):
                         continue
                     genres = post['text'].split('\n')[1].split('/')
-                    if not self._check_on_genres_condition(genres):
+                    if not self._check_genres(genres):
                         continue
 
                 if group is Groups.SOUNDFIELDS:
                     if post['text'] not in ('#somegoods', '#qweektunes'):
                         genres = post['text'].split('\n')[-1].replace('#', '').split(' ')
-                        if not self._check_on_genres_condition(genres):
+                        if not self._check_genres(genres):
                             continue
 
                 found_tracks, playlist_post_url = self._process_post(post, GroupsIDs[group.name].value)

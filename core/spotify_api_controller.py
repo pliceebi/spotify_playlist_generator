@@ -2,6 +2,7 @@ import requests
 import json
 from dataclasses import dataclass
 from typing import List, Dict, Optional
+from difflib import SequenceMatcher
 from base64 import b64encode
 
 from model.track import Track
@@ -60,7 +61,7 @@ class SpotifyAPIController:
             return None
 
         for item in items:
-            if item['name'].replace('- ', '') == track_name:
+            if SequenceMatcher(None, item['name'], track_name).ratio() > 0.95:
                 return item['uri']
         return None
 
@@ -85,12 +86,15 @@ class SpotifyAPIController:
         added_tracks_uris = []
         not_found_tracks = {}
         for track in tracks:
-            track_uri = self.get_track_uri(track.composed_full_name, track.name)
+            track_uri = self.get_track_uri(track.get_composed_full_name(), track.name)
             if not track_uri:
+                track_uri = self.get_track_uri(track.get_composed_alternative_full_name(), track.alternative_name)
+            if not track_uri:
+                not_found_track_name = track.get_not_found_name()
                 if track.vk_post_url not in not_found_tracks.keys():
-                    not_found_tracks[track.vk_post_url] = [track.not_found_name]
+                    not_found_tracks[track.vk_post_url] = [not_found_track_name]
                 else:
-                    not_found_tracks[track.vk_post_url].append(track.not_found_name)
+                    not_found_tracks[track.vk_post_url].append(not_found_track_name)
                 continue
             if track_uri not in added_tracks_uris:
                 self.add_track_to_playlist(playlist_id, track_uri)

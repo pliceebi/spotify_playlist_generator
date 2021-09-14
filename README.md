@@ -5,7 +5,7 @@ This project is used for retrieving tracks from certain VK music groups and auto
 
 For now I get tracks from 5 different groups where each of them has its own post structure. And that is why when you want
 to add a new VK group that should be processed, first you need to determine its structure and write corresponding code.
-This part is what makes this project is kind of hard to use for your own public.
+This part is what makes this project is kind of hard to use for your own needs.
 
 But when you are done with this part, you can finally enjoy listening to music without spending extra time manually 
 switching between different VK tabs and searching for the same liked VK tracks in Spotify

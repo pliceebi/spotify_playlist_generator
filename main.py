@@ -5,14 +5,6 @@ from core.spotify_api_controller import SpotifyAPIController
 from utils.utils import print_playlist_post_urls
 
 
-# TODO
-# 1) What to do with not found tracks? (DONE)
-# 2) Remove duplicates (Partly done)
-# 3) Add Craft music (DONE)
-# 4) Replace generating spotify token every morning with something else (NOT DONE YET)
-# 5) Decomposition (DONE)
-
-
 def main():
     # Init ProcessVkGroups object
     vk_token = os.environ.get('VK_API_TOKEN')

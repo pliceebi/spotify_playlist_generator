@@ -26,3 +26,10 @@ and add those values to environment variables
 Second, when you are all set, run this line of code:
 
 ```python main.py```
+
+
+## Development
+
+To install pre-commit:
+
+```pre-commit install```

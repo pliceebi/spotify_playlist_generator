@@ -1,9 +1,9 @@
-import requests
 import json
 from dataclasses import dataclass
-from typing import List, Dict, Optional
 from difflib import SequenceMatcher
-from base64 import b64encode
+from typing import Dict, List, Optional
+
+import requests
 
 from model.track import Track
 from utils.utils import yesterday_date_as_str
@@ -71,8 +71,8 @@ class SpotifyAPIController:
             headers={'Authorization': f'Bearer {self._api_token}', 'Content-Type': 'application/json'}
         )
         status_code = response.status_code
-        assert status_code in (200, 201), (f'Adding tracks to the playlist failed with status code: {status_code}.\n'
-                                           f'Reason: {response.reason}')
+        assert status_code in (200, 201), (f'Adding tracks to the playlist failed with '
+                                           f'status code: {status_code}.\nReason: {response.reason}')
 
     def add_tracks_to_playlist(self, playlist_id: str, tracks: List[Track]) -> Dict[str, List[str]]:
         """
@@ -81,11 +81,12 @@ class SpotifyAPIController:
         And return names of tracks which have not been found in Spotify.
         """
         added_tracks_uris = []
-        not_found_tracks = {}
+        not_found_tracks: Dict[str, List[str]] = {}
         for track in tracks:
             track_uri = self.get_track_uri(track.get_composed_full_name(), track.name)
             if not track_uri:
-                track_uri = self.get_track_uri(track.get_composed_alternative_full_name(), track.alternative_name)
+                track_uri = self.get_track_uri(track.get_composed_alternative_full_name(),
+                                               track.alternative_name)
             if not track_uri:
                 not_found_track_name = track.get_not_found_name()
                 if track.vk_post_url not in not_found_tracks.keys():
@@ -106,7 +107,7 @@ class SpotifyAPIController:
             headers={'Authorization': f'Bearer {self._api_token}', 'Content-Type': 'application/json'}
         )
         status_code = response.status_code
-        assert status_code in (200, 201), (f'Getting the playlist items failed with status code: {status_code}.\n'
-                                           f'Reason: {response.reason}')
+        assert status_code in (200, 201), (f'Getting the playlist items failed '
+                                           f'with status code: {status_code}.\nReason: {response.reason}')
         playlist_length = response.json()['total']
         return playlist_length

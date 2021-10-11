@@ -1,9 +1,10 @@
-import requests
 import json
-from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Dict, List, Optional, Tuple, Union
+
+import requests
 
 from model.track import Track
 
@@ -42,15 +43,13 @@ class VKAPIController:
     def _request_posts(self, group_domain: str) -> List:
         """Send HTTP-request to VK API to get last 20 posts for 'group_domain'."""
         url = 'https://api.vk.com/method/wall.get'
-        response = requests.get(
-            url,
-            params={
-                'domain': group_domain,
-                'count': 20,
-                'access_token': self._vk_api_token,
-                'v': self._api_version
-            }
-        )
+        params: Dict[str, Union[int, str, float]] = {
+            'domain': group_domain,
+            'count': 20,
+            'access_token': self._vk_api_token,
+            'v': self._api_version
+        }
+        response = requests.get(url, params=params)
         assert response.status_code == 200, (f'Request failed to get posts from {group_domain} '
                                              f'with {response.status_code}. Reason: {response.reason}')
         return json.loads(response.text)['response']['items']
@@ -74,14 +73,12 @@ class VKAPIController:
     def _get_group_id(self, group_domain: str) -> int:
         """Get group id by its domain."""
         url = 'https://api.vk.com/method/utils.resolveScreenName'
-        response = requests.get(
-            url=url,
-            params={
-                'screen_name': group_domain,
-                'access_token': self._vk_api_token,
-                'v': self._api_version
-            }
-        )
+        params: Dict[str, Union[float, str]] = {
+            'screen_name': group_domain,
+            'access_token': self._vk_api_token,
+            'v': self._api_version
+        }
+        response = requests.get(url=url, params=params)
         assert response.status_code == 200
         return response.json()['response']['object_id']
 
@@ -89,17 +86,15 @@ class VKAPIController:
     def _get_post_url(self, group_id: int, post_id: int) -> str:
         """Get post url based on group and post ids."""
         url = 'https://api.vk.com/method/wall.getById'
-        response = requests.get(
-            url=url,
-            params={
-                'posts': [f'{group_id}_{post_id}'],
-                'access_token': self._vk_api_token,
-                'v': self._api_version
-            }
-        )
+        params: Dict[str, Union[str, float, List[str]]] = {
+            'posts': [f'{group_id}_{post_id}'],
+            'access_token': self._vk_api_token,
+            'v': self._api_version
+        }
+        response = requests.get(url=url, params=params)
         return response.json()
 
-    def _process_post(self, post: Dict, group_id: str) -> Tuple[List[Track], Optional[str]]:
+    def _process_post(self, post: Dict, group_id: int) -> Tuple[List[Track], Optional[str]]:
         """Process a certain post."""
         tracks: List[Track] = []
 
@@ -108,7 +103,9 @@ class VKAPIController:
             repost = post['copy_history'][0]
             if not repost.get('attachments'):
                 return [], None
-            tracks_from_post = [attch['audio'] for attch in repost['attachments'] if attch['type'] == 'audio']
+            tracks_from_post = [
+                attch['audio'] for attch in repost['attachments'] if attch['type'] == 'audio'
+            ]
         # just a usual post
         else:
             if not post.get('attachments'):
@@ -140,7 +137,8 @@ class VKAPIController:
         -------
         Returns
             Tuple[List[Track], List[str]]
-            First element of tuple is a list of yesterday tracks from all the groups presented in 'Groups' class.
+            First element of tuple is a list of yesterday tracks from all the groups presented in
+            'Groups' class.
             Second element of tuple is a list of VK urls which consists of playlists which can't be parsed.
         """
         tracks: List[Track] = []

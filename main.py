@@ -1,7 +1,7 @@
 import os
 
-from core.vk_api_controller import VKAPIController
 from core.spotify_api_controller import SpotifyAPIController
+from core.vk_api_controller import VKAPIController
 from utils.utils import print_playlist_post_urls
 
 
@@ -29,7 +29,9 @@ def main():
     not_found_tracks = spotify.add_tracks_to_playlist(playlist_id, tracks)
     num_of_found_tracks = spotify.get_length_of_playlist(playlist_id)
 
-    print(f'Number of tracks to find: {num_of_tracks_to_find}. Number of found tracks: {num_of_found_tracks}')
+    print(f'Number of tracks to find: {num_of_tracks_to_find}. '
+          f'Number of found tracks: {num_of_found_tracks}')
+
     if num_of_found_tracks:
         print(f'Percentage of found tracks from VK in Spotify: '
               f'{round(num_of_found_tracks / num_of_tracks_to_find * 100, 1)}%')

@@ -8,7 +8,7 @@ class Track:
     artist: str
     name: str
     alternative_name: str
-    vk_post_url: str = None
+    vk_post_url: str
 
     @classmethod
     def compose_artist_name(cls, artist_name: str) -> str:

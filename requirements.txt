@@ -1,1 +1,2 @@
 requests
+pre-commit == 2.15.0
